@@ -3,10 +3,11 @@ from requests_html import HTMLSession
 import csv
 import threading
 import time
+import yaml
 
 
 class Google:
-    def __init__(self, query, location):
+    def __init__(self, api, query, location):
         self.query = query
         self.location = location
 
@@ -15,7 +16,7 @@ class Google:
             "location": self.location,
             "tbm": "lcl",
             "num": 100,
-            "api_key": "83895dd64df1876ddae4d73ee7bc8dbb4a1103623ea07fd37ea2c08ad87e9c41",
+            "api_key": "",
             "start": 0
         }
 
@@ -119,20 +120,22 @@ def main():
         writer = csv.writer(csvfile)
         writer.writerow(data_fields)
 
+    config = yaml.load(open('config/config.yaml'), Loader=yaml.FullLoader)
+    
     pool = []
     searches, locations = load_data()
     for search in searches:
         for location in locations:
-            t = threading.Thread(target=scrape, args=(search, location))
+            t = threading.Thread(target=scrape, args=(config['api_key'], search, location))
             t.start()
             pool.append(t)
             time.sleep(1)
         for t in pool:
             t.join()
+    
 
-
-def scrape(search, location):
-    google = Google(search + " near me", location)
+def scrape(api_key, search, location):
+    google = Google(api_key, search + " near me", location)
     companies = google.search()
     for company in companies:
         save_data(company)
